@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <title>To Do</title>
+</head>
+
+<body>
+    <div id="app">
+        <div class="genshin-to-do ">
+            <p>Genshin-to-do</p>
+
+            <div v-if="currentUser" class="user-info">
+                当前用户：{{ currentUser.username }}
+                <button @click="logout">退出登录</button>
+            </div>
+
+            <div class="to-do">
+            <input  
+                class="to-do-input" 
+                type="text" 
+                v-model="newTodo"
+                @keyup.enter="addTodo"
+                placeholder="add to do "
+            >
+            <button class="to-do-button" @click="addTodo">
+                    add to do
+            </button>
+            </div>
+
+            <div v-if="errorMessage" class="error-message">
+                {{ errorMessage }}
+            </div>
+
+            
+            <div class="item" v-for="todo in todos" :key="todo.id">
+                <input 
+                    type="checkbox" 
+                    v-model="todo.done" 
+                    :true-value="1"
+                    :false-value="0"
+                    @change="updateTodo(todo)">
+                    
+                <div class="name" :class="{ completed: todo.done }">
+                    {{ todo.text }}  <!--任务对象里的文字内容-->
+                </div>
+
+                <!-- 点击 Edit 时，会调用 app.js 中的 editTodo(todo) -->
+                <button class="edit" @click="editTodo(todo)">
+                    Edit
+                </button>
+
+                <button class="del" @click="deleteTodo(todo.id)">
+                    Del
+                </button>
+
+            </div>
+            <p v-if="todos.length === 0" class="empty">暂无待办事项</p> 
+
+        </div>
+    </div>
+    <style>
+        .error-message{
+            margin-top: 12px;
+            color: rgb(185, 70, 70);
+            text-align: center;
+            font-size: 16px;
+
+        }
+        .completed {
+            color: rgb(150, 150, 150);
+            text-decoration: line-through;
+        }
+
+        .del {
+            border: 0;
+            background: transparent;
+            font-size: 16px;
+        }
+        .item {
+            display: flex;
+            align-items: center;      /* 内容上下居中 */
+            gap: 12px;                /* 元素之间的间距 */
+
+            width: 70%;
+            margin: 20px auto;
+            padding: 16px 20px;
+            box-sizing: border-box;
+
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(70, 60, 90, 0.18);
+        }
+        .name {
+            font-size: 18px;
+            color: rgb(82, 70, 96);
+        }
+        .del {
+            margin-left: auto;        /* 把 Del 推到最右边 */
+            color: rgb(185, 90, 90);
+            cursor: pointer;
+        }
+        .to-do-button{
+            display: flex;
+            justify-content: center; /* 左右居中 */
+            align-items: center;  
+            width: 100px;
+            height: 52px;
+            border-radius: 10px 10px 10px 10px;
+            background: linear-gradient(
+                to left,
+                rgb(102, 170, 130), 
+                rgb(137, 112, 164)  
+                );
+            color: aliceblue;
+            cursor: pointer;
+        }
+        .to-do-input{
+              width: 60%;
+              padding: 12px 16px;
+              margin-left: 40px;
+              border: 1px solid rgb(190, 190, 190);
+              border-radius: 10px;
+              outline: none;
+              font-size: 16px;
+        }
+        .to-do{
+            display: flex; /*左右*/
+            width: 70%;
+            height: 52px;
+            margin: 40px auto 30px;
+        }
+        body{
+            background: linear-gradient(
+                to left,
+                rgb(102, 170, 130), 
+                rgb(137, 112, 164)  
+                );
+        }
+        .genshin-to-do{
+            width: 98%;
+            height: 500px;
+            margin: 20px auto; 
+            border-radius: 20px; 
+            background-color: aliceblue;
+        }
+        .genshin-to-do p {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 60px;           /* 字体大小 */
+            font-weight: 900;          /* 加粗 */
+            font-family: "Microsoft YaHei", sans-serif;
+            color: rgb(82, 70, 96);    
+            letter-spacing: 5px;  /*字间距*/
+        }
+
+    </style>
+    <script src="./app.js"></script>
+    
+</body>
+</html>
