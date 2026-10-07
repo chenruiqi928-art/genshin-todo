@@ -24,7 +24,7 @@
             //前端查后端数据
             async getList(){
                 const response = await axios.get(
-                    "http://localhost:3000/api/todos",
+                    "https://genshin-todo.onrender.com/api/todos",
                     {
                         params: {
                             userId: this.currentUser.id
@@ -50,7 +50,7 @@
                 // })
                 try{
                     await axios.post(
-                        "http://localhost:3000/api/todos",
+                        "https://genshin-todo.onrender.com/api/todos",
                         { 
                             text: text ,
                             userId: this.currentUser.id
@@ -67,14 +67,14 @@
             async deleteTodo(id) { // 对应 @click="deleteTodo(todo.id)"
                 // this.todos = this.todos.filter(todo => todo.id !== id)
                 await axios.post(
-                    "http://localhost:3000/api/todos/delete",
+                    "https://genshin-todo.onrender.com/api/todos/delete",
                     { id: id }
                 )
                 await this.getList()
             },
             async updateTodo(todo){
                 await axios.post(
-                    "http://localhost:3000/api/todos/update",
+                    "https://genshin-todo.onrender.com/api/todos/update",
                     {
                         id: todo.id,
                         done: todo.done
@@ -87,7 +87,7 @@
                 if (text === null || text.trim() === "") return
 
                 await axios.post(
-                    "http://localhost:3000/api/todos/edit-text",
+                    "https://genshin-todo.onrender.com/api/todos/edit-text",
                     {
                         id: todo.id,
                         text: text.trim()

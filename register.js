@@ -19,7 +19,7 @@ createApp({
         }
         try {
             const response = await axios.post(
-            "http://localhost:3000/api/register",
+            "https://genshin-todo.onrender.com/api/register",
             {
                 username: this.username,
                 password: this.password
