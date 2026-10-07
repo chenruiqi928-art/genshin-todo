@@ -283,6 +283,6 @@ const server = http.createServer(async (req, res) => {
   res.end("接口不存在")
 })
 
-server.listen(process.env.PORT || 3000, () => {
+server.listen(process.env.PORT || 3000,"0.0.0.0", () => {
   console.log("后端服务器已启动：http://localhost:3000")
 })
