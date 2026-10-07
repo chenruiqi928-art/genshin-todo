@@ -35,7 +35,7 @@ createApp({
                 "currentUser",
                 JSON.stringify(response.data.user)
             )
-            window.location.href = "./test 1.html"
+            window.location.href = "./index.html"
         } catch (error) {
             if (error.response) {
             alert(error.response.data.message)
