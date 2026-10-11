@@ -1,3 +1,4 @@
 *.db
 .vscode/
 *.docx
+node_modules/

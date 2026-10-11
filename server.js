@@ -1,37 +1,33 @@
-const { DatabaseSync } = require("node:sqlite") // SQLite 数据库工具
 const http = require("node:http")
 const crypto = require("node:crypto")  //node自带 保存到变量crypto
-const db = new DatabaseSync("todo.db")
+const { Pool } = require("pg")
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS todos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    text TEXT NOT NULL,
-    done INTEGER NOT NULL DEFAULT 0
-  )
-`)
-
-// 后端启动
-// → 检查 todos 表有没有 user_id
-// → 没有：添加 user_id
-// → 有：不做任何事
-const todoColumns = db
-    .prepare("PRAGMA table_info(todos)")//特殊查询 todo表有多少列
-    .all()
-const hasUserId = todoColumns.some(
-  (column) => column.name === "user_id"//检查列
-)
-if (!hasUserId) {
-  db.exec("ALTER TABLE todos ADD COLUMN user_id INTEGER")
+if (!process.env.DATABASE_URL) {
+  throw new Error("缺少 DATABASE_URL 环境变量")
 }
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,  
-    password_hash TEXT NOT NULL
-  )
-`)//UNIQUE表示不能有两个用户使用同一个用户名
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL
+})
+
+async function initializeDatabase() {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      username TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL
+    )
+  `)
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS todos (
+      id SERIAL PRIMARY KEY,
+      text TEXT NOT NULL,
+      done INTEGER NOT NULL DEFAULT 0,
+      user_id INTEGER REFERENCES users(id)
+    )
+  `)
+}
 
 
 // 读取 Axios 请求中的 data 内容。
@@ -86,14 +82,15 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && req.url.startsWith("/api/todos")) {
     const url = new URL(req.url, "http://localhost:3000")
     const userId = url.searchParams.get("userId")//取出地址里的用户编号。
-    const todos = db
-      .prepare("SELECT id, text, done FROM todos WHERE user_id = ?")
-      .all(userId)
+    const result = await db.query(
+      "SELECT id, text, done FROM todos WHERE user_id = $1 ORDER BY id",
+      [userId]
+    )
 
     res.writeHead(200, {
       "Content-Type": "application/json; charset=utf-8"
     })
-    res.end(JSON.stringify(todos))
+    res.end(JSON.stringify(result.rows))
     return
   }
 
@@ -110,12 +107,13 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({
         message: "任务不能为空"
       }))
-
+      return
     }
 
-    db
-      .prepare("INSERT INTO todos (text, user_id) VALUES (?, ?)")
-      .run(text, userId)
+    await db.query(
+      "INSERT INTO todos (text, user_id) VALUES ($1, $2)",
+      [text, userId]
+    )
 
     res.writeHead(201, {
       "Content-Type": "application/json; charset=utf-8"
@@ -131,7 +129,7 @@ const server = http.createServer(async (req, res) => {
     const data = await readBody(req)
     const id = data.id
 
-    db.prepare("DELETE FROM todos WHERE id = ?").run(id)
+    await db.query("DELETE FROM todos WHERE id = $1", [id])
 
     res.writeHead(200, {
       "Content-Type": "application/json; charset=utf-8"
@@ -148,9 +146,10 @@ const server = http.createServer(async (req, res) => {
     const id = data.id
     const done = data.done
 
-    db
-      .prepare("UPDATE todos SET done = ? WHERE id = ?")
-      .run(done ? 1 : 0, id)//是 true  → 保存 1   是 false → 保存 0
+    await db.query(
+      "UPDATE todos SET done = $1 WHERE id = $2",
+      [done ? 1 : 0, id]
+    )
 
     res.writeHead(200, {
       "Content-Type": "application/json; charset=utf-8"
@@ -168,9 +167,10 @@ const server = http.createServer(async (req, res) => {
     const text = data.text  //id与text 
     
 
-    db
-      .prepare("UPDATE todos SET text = ? WHERE id = ?")
-      .run(text, id) //执行这个任务
+    await db.query(
+      "UPDATE todos SET text = $1 WHERE id = $2",
+      [text, id]
+    )
 
     res.writeHead(200, {
       "Content-Type": "application/json; charset=utf-8"
@@ -206,10 +206,11 @@ const server = http.createServer(async (req, res) => {
       }))
       return
     }
-    const existingUser = db
-      .prepare("SELECT id FROM users WHERE username = ?")
-      .get(username.trim())
-    if (existingUser) {
+    const existingUser = await db.query(
+      "SELECT id FROM users WHERE username = $1",
+      [username.trim()]
+    )
+    if (existingUser.rowCount > 0) {
       res.writeHead(409, {
         "Content-Type": "application/json; charset=utf-8"
       })
@@ -220,9 +221,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     const passwordHash = hashPassword(password)
-    db
-      .prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)")
-      .run(username.trim(), passwordHash)
+    await db.query(
+      "INSERT INTO users (username, password_hash) VALUES ($1, $2)",
+      [username.trim(), passwordHash]
+    )
     
     res.writeHead(201, {
       "Content-Type": "application/json; charset=utf-8"
@@ -237,11 +239,11 @@ const server = http.createServer(async (req, res) => {
     const username = data.username
     const password = data.password
     //查询用户并验证密码
-    const user = db
-      .prepare(
-        "SELECT id, username, password_hash FROM users WHERE username = ?"
-      )
-        .get(username.trim())
+    const userResult = await db.query(
+      "SELECT id, username, password_hash FROM users WHERE username = $1",
+      [username.trim()]
+    )
+    const user = userResult.rows[0]
       if (!user) {
         res.writeHead(401, {
           "Content-Type": "application/json; charset=utf-8"
@@ -283,6 +285,13 @@ const server = http.createServer(async (req, res) => {
   res.end("接口不存在")
 })
 
-server.listen(process.env.PORT || 3000,"0.0.0.0", () => {
-  console.log("后端服务器已启动：http://localhost:3000")
-})
+initializeDatabase()
+  .then(() => {
+    server.listen(process.env.PORT || 3000, "0.0.0.0", () => {
+      console.log("后端服务器已启动：http://localhost:3000")
+    })
+  })
+  .catch((error) => {
+    console.error("数据库初始化失败", error)
+    process.exit(1)
+  })
