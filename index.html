@@ -15,8 +15,20 @@
             <p>Genshin-to-do</p>
 
             <div v-if="currentUser" class="user-info">
-                当前用户：{{ currentUser.username }}
-                <button @click="logout">退出登录</button>
+                <div class="user-profile">
+                    <span class="user-avatar">
+                        {{ currentUser.username.charAt(0).toUpperCase() }}
+                    </span>
+                    <div class="user-text">
+                        <span>当前用户</span>
+                        <strong>{{ currentUser.username }}</strong>
+                    </div>
+                </div>
+                <button class="logout-button" @click="logout">
+                    退出登录
+                </button>
+                <!-- 当前用户：{{ currentUser.username }}
+                <button @click="logout">退出登录</button> -->
             </div>
 
             <div class="progress-card">
@@ -188,6 +200,53 @@
         .progress-detail {
             color: rgb(112, 102, 125);
             font-size: 15px;
+        }
+        .user-info {
+            width: fit-content;
+            margin: 0 0 0 40px;
+            padding: 7px 10px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+
+            background: rgba(255, 255, 255, 0.28);
+            border: 1px solid rgba(255, 255, 255, 0.42);
+            border-radius: 12px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 15px;
+        }
+        .user-text {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .user-text span {
+            color: rgb(105, 94, 120);
+            font-size: 13px;
+        }
+
+        .user-text strong {
+            font-size: 15px;
+        }
+
+        .logout-button {
+            padding: 6px 10px;
+            font-size: 14px;
+        }
+
+        .logout-button:hover {
+            background: rgba(255, 255, 255, 0.85);
         }
 
         body{
