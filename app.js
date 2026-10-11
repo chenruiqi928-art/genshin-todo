@@ -19,6 +19,20 @@
             this.currentUser = JSON.parse(savedUser)
             this.getList()//自动调用 getList()→ Axios 请求后端→ 后端任务显示到页面
         },
+        //用于计算
+        computed:{
+            completedCount() {
+                return this.todos.filter((todo) => Number(todo.done) === 1).length
+            },
+            progressPercent(){
+                if(this.todos.length===0){
+                    return 0
+                }
+                return Math.round(
+                (this.completedCount / this.todos.length) * 100
+                )
+            }
+        },
         // 定义方法
         methods: {
             //前端查后端数据
